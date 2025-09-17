@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitch Chat Simulator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Browser compatibility banner -->
+    <div id="browser-banner" class="browser-warning-banner" style="display: none;">
+        <div class="browser-banner-content">
+            <span class="browser-banner-icon">⚠️</span>
+            <span id="browser-banner-text">Certaines fonctionnalités peuvent ne pas fonctionner correctement avec votre navigateur.</span>
+            <button class="browser-banner-close" onclick="window.closeBrowserBanner()">✕</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <header class="app-header">
+            <h1>🎮 Twitch Chat Simulator</h1>
+            <div class="header-controls">
+                <select id="scenario-select" class="scenario-select" title="Choose a preset">
+                    <option value="">🎭 Choose a Preset</option>
+                    <option value="gaming">🎮 Gaming Stream</option>
+                    <option value="just-chatting">💬 Just Chatting</option>
+                    <option value="esports">🏆 Esports Tournament</option>
+                    <option value="raid">⚔️ Raid Incoming</option>
+                    <option value="sub-train">🚂 Sub Train</option>
+                    <option value="drama">🔥 Drama/Controversy</option>
+                    <option value="chill">😌 Chill Vibes</option>
+                    <option value="hype">🚀 Hype Release</option>
+                </select>
+                <button id="theme-toggle" class="btn btn-theme" title="Change theme">🌙</button>
+                <button id="start-btn" class="btn btn-primary">▶️ Start</button>
+                <button id="stop-btn" class="btn btn-danger">⏸️ Pause</button>
+                <button id="clear-btn" class="btn btn-secondary">🗑️ Clear</button>
+                <button id="export-btn" class="btn btn-export">🎬 Export Video</button>
+                <button id="reset-settings-btn" class="btn btn-reset" title="Reset all settings">🔄 Reset</button>
+            </div>
+        </header>
+        
+        <div class="content-wrapper">
+            <div class="chat-section">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <span class="stream-title">LIVE CHAT</span>
+                        <div class="viewer-count">👥 <span id="viewer-count">0</span> viewers</div>
+                    </div>
+                    <div id="chat-messages" class="chat-messages">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls-section">
+                <div class="control-tabs">
+                    <button class="tab-btn active" data-tab="general">⚙️ General</button>
+                    <button class="tab-btn" data-tab="appearance">🎨 Appearance</button>
+                    <button class="tab-btn" data-tab="badges">🏅 Badges</button>
+                    <button class="tab-btn" data-tab="emotes">😄 Emotes</button>
+                </div>
+                
+                <div class="tab-content" id="general-tab" style="padding: 1rem;  position: relative;">
+                    <!-- Section principale simplifiée -->
+                    <div style="display: grid; gap: 2rem;">
+                        <!-- Contrôles principaux -->
+                        <div style="background: var(--color-hinted-grey-2); padding: 2rem; border-radius: 0.8rem; position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -20px; right: -20px; font-size: 80px; opacity: 0.1; transform: rotate(-15deg);">🚀</div>
+                            <h3 style="font-size: 1.5rem; margin-bottom: 1.5rem;">🎮 Main Controls</h3>
+
+                            <div style="display: grid; gap: 1.5rem;">
+                                <!-- Vitesse -->
+                                <div>
+                                    <label style="display: block; margin-bottom: 0.8rem; font-weight: 500;">⚡ Message Speed</label>
+                                    <div class="slider-wrapper">
+                                        <input type="range" id="speed-slider" min="100" max="3000" value="1000">
+                                        <span id="speed-value" style="background: var(--color-twitch-purple-9); padding: 0.4rem 0.8rem; border-radius: 0.4rem;">1000ms</span>
+                                    </div>
+                                </div>
+
+                                <!-- Viewers -->
+                                <div>
+                                    <label style="display: block; margin-bottom: 0.8rem; font-weight: 500;">👀 Active Viewers</label>
+                                    <div class="slider-wrapper">
+                                        <input type="range" id="viewer-multiplier" min="1" max="100" value="25">
+                                        <span id="multiplier-value" style="background: var(--color-twitch-purple-9); padding: 0.4rem 0.8rem; border-radius: 0.4rem;">25</span>
+                                    </div>
+                                </div>
+
+                                <!-- Options -->
+                                <div style="display: flex; gap: 2rem; margin-top: 1rem;">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="emote-only-checkbox">
+                                        <span>🎭 Emote Only Mode</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="bot-messages-checkbox">
+                                        <span>🤖 Bot Messages</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bot config (affiché seulement si activé) -->
+                        <div id="bot-config-section" style="background: var(--color-hinted-grey-2); padding: 2rem; border-radius: 0.8rem; display: none; border: 2px solid var(--color-twitch-purple-9); position: relative; margin-top: 2rem;">
+                            <div style="position: absolute; top: -18px; left: 20px; background: var(--color-hinted-grey-2); padding: 0 1.2rem; font-size: 1.2rem; color: var(--color-twitch-purple-11); font-weight: 600; border: 2px solid var(--color-twitch-purple-9); border-radius: 0.5rem;">🤖 BOT CONFIG ENABLED</div>
+                            <h3 style="font-size: 1.5rem; margin-bottom: 1.5rem; margin-top: 1rem;">🤖 Nightbot is in the house!</h3>
+
+                            <div style="margin-bottom: 1.5rem;">
+                                <label style="display: block; margin-bottom: 0.8rem; font-weight: 500;">💬 Bot Message</label>
+                                <textarea id="bot-message-input" style="width: 100%; min-height: 60px; resize: vertical;">📢 Don't forget to follow the channel! Join our Discord. Thanks for your support! 💜</textarea>
+                            </div>
+
+                            <div>
+                                <label style="display: block; margin-bottom: 0.8rem; font-weight: 500;">⏰ Spam Frequency</label>
+                                <div class="slider-wrapper">
+                                    <input type="range" id="bot-delay-slider" min="5" max="120" value="30" step="5">
+                                    <span id="bot-delay-value" style="background: var(--color-twitch-purple-9); padding: 0.4rem 0.8rem; border-radius: 0.4rem;">30 seconds</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contenu (caché par défaut, expansible) -->
+                        <details style="background: var(--color-hinted-grey-2); padding: 2rem; border-radius: 0.8rem; position: relative;">
+                            <summary style="cursor: pointer; font-size: 1.5rem; font-weight: 500; margin-bottom: 1rem; padding: 1rem; background: var(--color-background-body); border-radius: 0.5rem; transition: all 0.2s;" onmouseover="this.style.background='var(--color-hinted-grey-3)'" onmouseout="this.style.background='var(--color-background-body)'">
+                                🎨 Customize Content <span style="font-size: 1rem; opacity: 0.7;">(Click to open)</span>
+                            </summary>
+
+                            <div style="display: grid; gap: 1.5rem; margin-top: 1.5rem;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 0.8rem; font-weight: 500;">🗣️ Chat Messages <span style="font-size: 0.9rem; opacity: 0.7;">(spam spam spam)</span></label>
+                                    <textarea id="words-input" style="width: 100%; min-height: 80px; resize: vertical;">hey, gg, wow, lol, poggers, ez, noob, kappa, omg, lets go, nice, amazing, ratio, sheesh, help, lmao, rofl, cool, insane, hot, go go go, clutch, too good, legend, idk, chill, smooth, rep, hype</textarea>
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 0.8rem; font-weight: 500;">👥 Viewer Usernames <span style="font-size: 0.9rem; opacity: 0.7;">(the chat legends)</span></label>
+                                    <textarea id="usernames-input" style="width: 100%; min-height: 80px; resize: vertical;">DarkGamer42, xXProPlayerXx, StreamViewer123, NinjaFan2000, TwitchUser, EliteSniper, CasualGamer, ProGamerUSA, ViewerRandom, ChatMaster, KappaKing, PogChampion, NoScope360, GameLover, StreamFan99, EpicPlayer, LolMaster, GGWinner, ToxicBoi, FriendlyGuy, ShadowHunter, PixelWarrior, NightOwl23, ThunderBolt, IceQueen, FireStorm, DragonSlayer, PhoenixRise, CosmicRay, QuantumLeap, NeonLight, CyberPunk, RetroGamer, AlphaWolf, BetaTest, GammaRay, DeltaForce, EchoBase, FoxtrotGaming, GolfClub, HotelCalifornia, IndigoChild, JulietRose, KiloBytes, LimaPeru, MikeCheck, NovemberRain, OscarWild, PapaJohn, QuebecCity, RomeoGaming, SierraLeone, TangoDown, UniformCode, VictorHugo, WhiskeyTango, XrayVision, YankeeFootball, ZuluTime, AceVentura, BlazeRunner, ChaosMaster, DreamCatcher, EdgeLord, FrostBite, GhostRecon, HyperDrive, IronFist, JadeWarrior, KryptonGamer, LaserFocus, MysticForce, NitroBoost, OmegaPoint, PulseRider, QuasarGaming, RazorEdge, SonicBoom, TitanFall, UltraViolet, VenomStrike, WarpSpeed, XenonPulse, YinYang, ZeroGravity, BinaryCode, CryptoMiner, DataStream, EtherealGamer, FluxCapacitor, GridLocked, HexEditor, IconicPlayer, JavaBeans, KernelPanic, LogicGate, MatrixRunner, NodeMaster, OverClock, PixelPerfect, QuantumBit, RouterKing, SyntaxError, TerminalVelocity, UserSpace, VectorGraphics, WebCrawler, XMLParser, YottaByte, ZettaFlops</textarea>
+                                </div>
+                            </div>
+                        </details>
+
+                    </div>
+                </div>
+
+                <div class="tab-content" id="appearance-tab" style="display: none; padding: 1rem;  position: relative;">
+                    <div style="display: grid; gap: 2rem;">
+                        <!-- Dimensions -->
+                        <div style="background: var(--color-hinted-grey-2); padding: 2rem; border-radius: 0.8rem;">
+                            <h3 style="font-size: 1.5rem; margin-bottom: 1.5rem;">📏 Chat Dimensions</h3>
+
+                            <div style="display: grid; gap: 1.5rem;">
+                                <div>
+                                    <label style="display: block; margin-bottom: 0.8rem; font-weight: 500;">↔️ Width</label>
+                                    <div class="slider-wrapper">
+                                        <input type="range" id="width-slider" min="300" max="2000" value="600" step="10">
+                                        <span id="width-value" style="background: var(--color-twitch-purple-9); padding: 0.4rem 0.8rem; border-radius: 0.4rem;">600px</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style="display: block; margin-bottom: 0.8rem; font-weight: 500;">↕️ Height</label>
+                                    <div class="slider-wrapper">
+                                        <input type="range" id="height-slider" min="400" max="1200" value="700" step="10">
+                                        <span id="height-value" style="background: var(--color-twitch-purple-9); padding: 0.4rem 0.8rem; border-radius: 0.4rem;">700px</span>
+                                    </div>
+                                </div>
+                                <label class="checkbox-label" style="margin-top: 1rem;">
+                                    <input type="checkbox" id="responsive-checkbox" checked>
+                                    <span>📱 Responsive Mode</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Options visuelles -->
+                        <div style="background: var(--color-hinted-grey-2); padding: 2rem; border-radius: 0.8rem;">
+                            <h3 style="font-size: 1.5rem; margin-bottom: 1.5rem;">🎨 Display Options</h3>
+
+                            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="emotes-checkbox" checked>
+                                    <span>😀 Show Emotes</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="colors-checkbox" checked>
+                                    <span>🎨 Username Colors</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="badges-tab" style="display: none;  position: relative;">
+                    <div class="control-group">
+                        <h3>🎖️ Badges Twitch</h3>
+                        <div class="official-badges-grid">
+                            <label class="badge-checkbox">
+                                <input type="checkbox" id="badge-broadcaster" data-badge="broadcaster" checked>
+                                <div class="badge-label">
+                                    <img src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3" alt="Broadcaster">
+                                    <span>Streamer</span>
+                                </div>
+                            </label>
+                            <label class="badge-checkbox">
+                                <input type="checkbox" id="badge-mod" data-badge="mod" checked>
+                                <div class="badge-label">
+                                    <img src="https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/3" alt="Mod">
+                                    <span>Moderator</span>
+                                </div>
+                            </label>
+                            <label class="badge-checkbox">
+                                <input type="checkbox" id="badge-vip" data-badge="vip" checked>
+                                <div class="badge-label">
+                                    <img src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/3" alt="VIP">
+                                    <span>VIP</span>
+                                </div>
+                            </label>
+                            <label class="badge-checkbox">
+                                <input type="checkbox" id="badge-sub" data-badge="sub" checked>
+                                <div class="badge-label">
+                                    <img src="https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3" alt="Sub">
+                                    <span>Abonné</span>
+                                </div>
+                            </label>
+                            <label class="badge-checkbox">
+                                <input type="checkbox" id="badge-prime" data-badge="prime" checked>
+                                <div class="badge-label">
+                                    <img src="https://static-cdn.jtvnw.net/badges/v1/bbbe0db0-a598-423e-86d0-f9fb98ca1933/3" alt="Prime">
+                                    <span>Prime</span>
+                                </div>
+                            </label>
+                            <label class="badge-checkbox">
+                                <input type="checkbox" id="badge-turbo" data-badge="turbo" checked>
+                                <div class="badge-label">
+                                    <img src="https://static-cdn.jtvnw.net/badges/v1/bd444ec6-8f34-4bf9-91f4-af1e3428d80f/3" alt="Turbo">
+                                    <span>Turbo</span>
+                                </div>
+                            </label>
+                            <label class="badge-checkbox">
+                                <input type="checkbox" id="badge-verified" data-badge="verified" checked>
+                                <div class="badge-label">
+                                    <img src="https://static-cdn.jtvnw.net/badges/v1/d12a2e27-16f6-41d0-ab77-b780518f00a3/3" alt="Verified">
+                                    <span>Vérifié</span>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="custom-items-list" style="margin-top: 1.5rem;">
+                            <h4>Custom Badges</h4>
+                            <div id="custom-badges-list" class="items-container">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h3>➕ Add Custom Badge</h3>
+                        <div class="add-badge-form">
+                            <div class="badge-form-row">
+                                <input type="text" id="badge-name-input" placeholder="Badge name" class="form-input">
+                                <div id="badge-drop-zone" class="badge-upload-zone">
+                                    <input type="file" id="badge-file-input" accept="image/*" style="display: none;">
+                                    <div class="upload-placeholder-small">
+                                        <span>📸</span>
+                                    </div>
+                                    <img id="badge-preview" class="badge-preview-img" style="display: none;">
+                                </div>
+                            </div>
+                            <div class="badge-form-row">
+                                <div class="badge-probability">
+                                    <label>Appearance Probability</label>
+                                    <div class="probability-input">
+                                        <input type="number" id="badge-weight-input" min="1" max="100" value="10" class="form-input-small">
+                                        <span>%</span>
+                                    </div>
+                                </div>
+                                <button id="add-badge-btn" class="btn btn-add-badge">Add</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="emotes-tab" style="display: none;  position: relative;">
+                    <div class="control-group">
+                        <h3>😄 Default Emojis</h3>
+                        <div class="default-emojis-grid" id="default-emojis-grid">
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h3>➕ Add Custom Emote</h3>
+                        <div class="add-emote-form">
+                            <input type="text" id="emote-name-input" placeholder="Emote name (e.g. Kappa)" class="form-input">
+                            <div id="image-drop-zone" class="image-upload-zone large">
+                                <input type="file" id="emote-file-input" accept="image/*" style="display: none;">
+                                <div class="upload-placeholder">
+                                    <span>📸 Click to choose</span>
+                                    <span>or drag an image</span>
+                                    <span>or Ctrl+V to paste</span>
+                                </div>
+                                <img id="emote-preview" class="upload-preview" style="display: none;">
+                            </div>
+                            <button id="add-emote-btn" class="btn btn-add">Add Emote</button>
+                        </div>
+                        
+                        <div class="custom-items-list">
+                            <h4>Custom Emotes</h4>
+                            <div id="custom-emotes-list" class="items-container">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Settings Modal -->
+    <div id="export-settings-modal" class="export-modal" style="display: none;">
+        <div class="export-modal-content">
+            <h3>⚙️ Paramètres d'export vidéo</h3>
+
+            <!-- Browser warning -->
+            <div id="browser-warning" class="browser-warning" style="display: none;">
+                <span class="warning-icon">⚠️</span>
+                <div class="warning-text">
+                    <strong id="warning-title">Compatibilité limitée</strong>
+                    <small id="warning-message">Certaines fonctionnalités peuvent ne pas fonctionner</small>
+                </div>
+            </div>
+
+            <div class="export-setting-group">
+                <label>⏱️ Durée de la vidéo</label>
+                <div class="export-duration-options">
+                    <button class="duration-btn" data-duration="10">10s</button>
+                    <button class="duration-btn" data-duration="30">30s</button>
+                    <button class="duration-btn active" data-duration="60">1 min</button>
+                    <button class="duration-btn" data-duration="120">2 min</button>
+                    <button class="duration-btn" data-duration="180">3 min</button>
+                    <button class="duration-btn" data-duration="300">5 min</button>
+                </div>
+                <div class="custom-duration-wrapper">
+                    <input type="number" id="custom-duration" min="5" max="600" placeholder="Personnalisé (sec)">
+                </div>
+            </div>
+
+            <div class="export-setting-group">
+                <label>📦 Format de sortie</label>
+                <div class="export-format-options">
+                    <div class="format-option">
+                        <input type="radio" id="format-webm" name="format" value="webm" checked>
+                        <label for="format-webm">
+                            <strong>WebM</strong>
+                            <small>Compatible web • Rapide</small>
+                        </label>
+                    </div>
+                    <div class="format-option">
+                        <input type="radio" id="format-mp4" name="format" value="mp4">
+                        <label for="format-mp4">
+                            <strong>MP4</strong>
+                            <small>Compatible partout • Plus lent</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="export-setting-group">
+                <label>✂️ Zone d'export</label>
+                <div class="export-crop-options">
+                    <div class="format-option">
+                        <input type="checkbox" id="crop-to-chat" name="crop" checked>
+                        <label for="crop-to-chat">
+                            <strong>Rogner au chat uniquement</strong>
+                            <small>Exporte seulement la fenêtre de chat sans le fond</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="export-setting-group">
+                <label>🎨 Qualité vidéo</label>
+                <div class="export-quality-options">
+                    <div class="quality-option">
+                        <input type="radio" id="quality-low" name="quality" value="low">
+                        <label for="quality-low">
+                            <strong>Basse</strong>
+                            <small>720p • 24 fps • 2 Mbps</small>
+                        </label>
+                    </div>
+                    <div class="quality-option">
+                        <input type="radio" id="quality-medium" name="quality" value="medium" checked>
+                        <label for="quality-medium">
+                            <strong>Moyenne</strong>
+                            <small>1080p • 30 fps • 8 Mbps</small>
+                        </label>
+                    </div>
+                    <div class="quality-option">
+                        <input type="radio" id="quality-high" name="quality" value="high">
+                        <label for="quality-high">
+                            <strong>Haute</strong>
+                            <small>1080p • 60 fps • 16 Mbps</small>
+                        </label>
+                    </div>
+                    <div class="quality-option">
+                        <input type="radio" id="quality-ultra" name="quality" value="ultra">
+                        <label for="quality-ultra">
+                            <strong>Ultra HD</strong>
+                            <small>1440p • 60 fps • 24 Mbps</small>
+                        </label>
+                    </div>
+                    <div class="quality-option">
+                        <input type="radio" id="quality-4k" name="quality" value="4k">
+                        <label for="quality-4k">
+                            <strong>4K</strong>
+                            <small>2160p • 30 fps • 40 Mbps</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="export-modal-buttons">
+                <button id="start-export-btn" class="btn btn-primary">🎬 Lancer l'export</button>
+                <button id="cancel-export-settings" class="btn btn-secondary">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Progress Modal -->
+    <div id="export-modal" class="export-modal" style="display: none;">
+        <div class="export-modal-content">
+            <h3>🎬 Export vidéo en cours</h3>
+            <div class="export-progress-bar">
+                <div id="export-progress" class="export-progress-fill"></div>
+            </div>
+            <p id="export-status">Préparation...</p>
+            <button id="cancel-export" class="btn btn-secondary">Annuler</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="mp4-converter.js"></script>
+    <script src="video-exporter.js"></script>
+</body>
+</html>
