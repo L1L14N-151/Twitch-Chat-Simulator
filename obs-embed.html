@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitch Chat - OBS</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* OBS Specific Overrides */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        /* Hide all controls for OBS */
+        .app-header,
+        .controls-section,
+        .control-tabs,
+        .browser-warning-banner,
+        #browser-banner {
+            display: none !important;
+        }
+
+        .main-container {
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .content-wrapper {
+            height: 100%;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-section {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+            margin: 0;
+        }
+
+        /* Transparent background option */
+        body.transparent {
+            background: transparent !important;
+        }
+
+        body.transparent .main-container,
+        body.transparent .content-wrapper {
+            background: transparent !important;
+        }
+
+        body.transparent .chat-container {
+            background: rgba(24, 24, 27, 0.95) !important;
+        }
+
+        body.transparent.light .chat-container {
+            background: rgba(255, 255, 255, 0.95) !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hidden inputs to satisfy script.js -->
+    <div style="display: none;">
+        <input id="speed-slider" type="range" value="1000">
+        <span id="speed-value">1000ms</span>
+        <textarea id="words-input">hey, gg, wow</textarea>
+        <textarea id="usernames-input">User1, User2</textarea>
+        <input type="checkbox" id="emotes-checkbox" checked>
+        <input type="checkbox" id="colors-checkbox" checked>
+        <input type="checkbox" id="emote-only-checkbox">
+        <input type="checkbox" id="bot-messages-checkbox">
+        <textarea id="bot-message-input">Bot message</textarea>
+        <input id="bot-delay-slider" type="range" value="30">
+        <span id="bot-delay-value">30</span>
+        <input id="width-slider" type="range" value="600">
+        <span id="width-value">600px</span>
+        <input id="height-slider" type="range" value="700">
+        <span id="height-value">700px</span>
+        <input type="checkbox" id="responsive-checkbox">
+        <input id="viewer-multiplier" type="range" value="25">
+        <span id="multiplier-value">25</span>
+
+        <!-- Badge checkboxes -->
+        <input type="checkbox" id="badge-broadcaster" checked>
+        <input type="checkbox" id="badge-mod" checked>
+        <input type="checkbox" id="badge-vip" checked>
+        <input type="checkbox" id="badge-sub" checked>
+        <input type="checkbox" id="badge-prime" checked>
+        <input type="checkbox" id="badge-turbo" checked>
+        <input type="checkbox" id="badge-verified" checked>
+
+        <!-- Required buttons -->
+        <button id="start-btn">Start</button>
+        <button id="stop-btn">Stop</button>
+        <button id="clear-btn">Clear</button>
+
+        <!-- Empty containers for custom items -->
+        <div id="custom-emotes-list"></div>
+        <div id="custom-badges-list"></div>
+        <div id="default-emojis-grid"></div>
+        <div id="bot-config-section"></div>
+    </div>
+
+    <!-- Main chat container (visible) -->
+    <div class="main-container">
+        <div class="content-wrapper">
+            <div class="chat-section">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <span class="stream-title">LIVE CHAT</span>
+                        <div class="viewer-count">👥 <span id="viewer-count">0</span> viewers</div>
+                    </div>
+                    <div id="chat-messages" class="chat-messages"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load the main script -->
+    <script src="script.js"></script>
+
+    <!-- OBS specific initialization -->
+    <script>
+        // Parse URL parameters and apply all settings
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Function to restore all settings from URL
+        function restoreAllSettings() {
+            // Theme
+            if (urlParams.get('theme') === 'light') {
+                document.body.classList.add('light');
+            }
+
+            // Transparent
+            if (urlParams.get('transparent') === 'true') {
+                document.body.classList.add('transparent');
+            }
+
+            // Speed
+            const speed = urlParams.get('speed');
+            if (speed && speedSlider) {
+                speedSlider.value = speed;
+                speedValue.textContent = speed + 'ms';
+                localStorage.setItem('twitchSimMessageSpeed', speed);
+            }
+
+            // Viewer count multiplier
+            const viewers = urlParams.get('viewers');
+            if (viewers) {
+                const multiplier = document.getElementById('viewer-multiplier');
+                if (multiplier) {
+                    multiplier.value = viewers;
+                    localStorage.setItem('twitchSimViewerMultiplier', viewers);
+                }
+                // Update viewer count
+                updateViewerCount();
+            }
+
+            // Messages
+            const messages = urlParams.get('messages');
+            if (messages) {
+                const decoded = decodeURIComponent(messages);
+                wordsInput.value = decoded;
+                localStorage.setItem('twitchSimMessages', decoded);
+            }
+
+            // Usernames
+            const usernames = urlParams.get('usernames');
+            if (usernames) {
+                const decoded = decodeURIComponent(usernames);
+                usernamesInput.value = decoded;
+                localStorage.setItem('twitchSimUsernames', decoded);
+            }
+
+            // Checkboxes
+            if (urlParams.get('emoteOnly') === 'true') {
+                emoteOnlyCheckbox.checked = true;
+                localStorage.setItem('twitchSimEmoteOnly', 'true');
+            }
+
+            if (urlParams.get('botMessages') === 'true') {
+                botMessagesCheckbox.checked = true;
+                localStorage.setItem('twitchSimBotMessages', 'true');
+            }
+
+            const botMessage = urlParams.get('botMessage');
+            if (botMessage) {
+                const decoded = decodeURIComponent(botMessage);
+                botMessageInput.value = decoded;
+                localStorage.setItem('twitchSimBotMessage', decoded);
+            }
+
+            const botDelay = urlParams.get('botDelay');
+            if (botDelay) {
+                botDelaySlider.value = botDelay;
+                localStorage.setItem('twitchSimBotDelay', botDelay);
+            }
+
+            if (urlParams.get('colors') === 'false') {
+                colorsCheckbox.checked = false;
+                localStorage.setItem('twitchSimColors', 'false');
+            }
+
+            if (urlParams.get('emotes') === 'false') {
+                emotesCheckbox.checked = false;
+                localStorage.setItem('twitchSimEmotes', 'false');
+            }
+
+            // Badges
+            const badges = urlParams.get('badges');
+            if (badges) {
+                // First uncheck all
+                document.querySelectorAll('[id^="badge-"]').forEach(cb => cb.checked = false);
+
+                // Then check only the ones specified
+                const badgeList = badges.split(',');
+                badgeList.forEach(badge => {
+                    const checkbox = document.getElementById(`badge-${badge}`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+
+            // Custom emotes
+            const customEmotesParam = urlParams.get('customEmotes');
+            if (customEmotesParam) {
+                try {
+                    const decoded = atob(customEmotesParam);
+                    const emotesData = JSON.parse(decoded);
+                    window.customEmotes = emotesData;
+                    localStorage.setItem('twitchSimCustomEmotes', JSON.stringify(emotesData));
+                } catch (e) {
+                    console.error('Failed to parse custom emotes:', e);
+                }
+            }
+
+            // Custom badges
+            const customBadgesParam = urlParams.get('customBadges');
+            if (customBadgesParam) {
+                try {
+                    const decoded = atob(customBadgesParam);
+                    const badgesData = JSON.parse(decoded);
+                    window.customBadges = badgesData;
+                    localStorage.setItem('twitchSimCustomBadges', JSON.stringify(badgesData));
+                } catch (e) {
+                    console.error('Failed to parse custom badges:', e);
+                }
+            }
+
+            // Dimensions
+            const width = urlParams.get('width');
+            const height = urlParams.get('height');
+            if (width) widthSlider.value = width;
+            if (height) heightSlider.value = height;
+        }
+
+        // Wait for script.js to load then apply settings and start
+        window.addEventListener('DOMContentLoaded', () => {
+            // Small delay to ensure script.js is fully initialized
+            setTimeout(() => {
+                console.log('Initializing OBS embed...');
+
+                // Restore all settings from URL
+                restoreAllSettings();
+
+                // Load saved settings if they exist
+                if (typeof loadSettings === 'function') {
+                    loadSettings();
+                }
+
+                // Start the chat simulation
+                if (urlParams.get('autostart') === 'true') {
+                    setTimeout(() => {
+                        console.log('Starting chat simulation...');
+                        if (typeof startSimulation === 'function') {
+                            startSimulation();
+                        } else {
+                            console.error('startSimulation function not found!');
+                        }
+                    }, 500);
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

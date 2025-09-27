@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBS Chat</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Force full size for OBS */
+        * { margin: 0; padding: 0; }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        /* Hide all controls */
+        .app-header, .controls-section, .browser-warning-banner {
+            display: none !important;
+        }
+
+        .main-container {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .content-wrapper {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+
+        .chat-section {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chat-container {
+            width: 100%;
+            height: 100%;
+            max-width: none !important;
+            max-height: none !important;
+            border-radius: 0;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="content-wrapper">
+            <div class="chat-section">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <span class="stream-title">LIVE CHAT</span>
+                        <div class="viewer-count">👥 <span id="viewer-count">0</span> viewers</div>
+                    </div>
+                    <div id="chat-messages" class="chat-messages"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple standalone script that works in OBS -->
+    <script>
+        // Basic config
+        let isRunning = false;
+        let interval = null;
+        const chatMessages = document.getElementById('chat-messages');
+
+        // User pools from localStorage
+        function getUsers() {
+            const saved = localStorage.getItem('twitchSimUsernames');
+            return saved ? saved.split(',').map(u => u.trim()) :
+                ['DarkGamer42', 'StreamViewer', 'NinjaFan', 'TwitchUser', 'ChatMaster'];
+        }
+
+        function getMessages() {
+            const saved = localStorage.getItem('twitchSimMessages');
+            return saved ? saved.split(',').map(m => m.trim()) :
+                ['hey', 'gg', 'wow', 'lol', 'poggers', 'nice', 'lets go'];
+        }
+
+        const userColors = ['#ff0000', '#0000ff', '#00ff00', '#b700ff', '#ff7f00'];
+
+        // Simple message creation
+        function createMessage() {
+            const users = getUsers();
+            const messages = getMessages();
+
+            const username = users[Math.floor(Math.random() * users.length)];
+            const text = messages[Math.floor(Math.random() * messages.length)];
+            const color = userColors[Math.floor(Math.random() * userColors.length)];
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'chat-message';
+            msgDiv.innerHTML = `
+                <span class="chat-username" style="color: ${color};">${username}</span>
+                <span class="chat-text">: ${text}</span>
+            `;
+
+            return msgDiv;
+        }
+
+        // Add message to chat
+        function addMessage() {
+            const msg = createMessage();
+            chatMessages.appendChild(msg);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Limit messages
+            while (chatMessages.children.length > 100) {
+                chatMessages.removeChild(chatMessages.firstChild);
+            }
+        }
+
+        // Update viewer count
+        function updateViewers() {
+            const viewerEl = document.getElementById('viewer-count');
+            const base = 1000 + Math.floor(Math.random() * 500);
+            viewerEl.textContent = base.toLocaleString();
+        }
+
+        // Start simulation
+        function start() {
+            if (isRunning) return;
+            isRunning = true;
+
+            const speed = parseInt(localStorage.getItem('twitchSimMessageSpeed')) || 1000;
+
+            // Add first message
+            addMessage();
+
+            // Continue adding messages
+            interval = setInterval(() => {
+                addMessage();
+            }, speed);
+
+            console.log('OBS Chat Started - Speed:', speed);
+        }
+
+        // Listen for broadcast from main window
+        const channel = new BroadcastChannel('twitch-mirror');
+        channel.addEventListener('message', function(e) {
+            if (e.data.type === 'new-message') {
+                // Clear interval - we're receiving from main
+                if (interval) {
+                    clearInterval(interval);
+                    interval = null;
+                }
+
+                // Add the mirrored message
+                const temp = document.createElement('div');
+                temp.innerHTML = e.data.html;
+                chatMessages.appendChild(temp.firstChild);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                // Cleanup
+                while (chatMessages.children.length > 100) {
+                    chatMessages.removeChild(chatMessages.firstChild);
+                }
+            }
+        });
+
+        // Auto-start immediately when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('OBS Chat Loading...');
+            updateViewers();
+
+            // Force start
+            setTimeout(() => {
+                console.log('Force starting OBS chat...');
+                start();
+            }, 100);
+        });
+
+        // Also try to start on load
+        window.addEventListener('load', () => {
+            if (!isRunning) {
+                console.log('Starting on load...');
+                start();
+            }
+        });
+
+        // Update viewers periodically
+        setInterval(updateViewers, 30000);
+
+        // FAILSAFE: If still not running after 2 seconds, force start
+        setTimeout(() => {
+            if (!isRunning) {
+                console.log('FAILSAFE: Force starting...');
+                start();
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

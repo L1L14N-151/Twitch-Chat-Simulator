@@ -1255,6 +1255,15 @@ textarea:focus {
     background: linear-gradient(135deg, #5568d3 0%, #63408b 100%);
 }
 
+.btn-obs {
+    background: linear-gradient(135deg, #00c896 0%, #00a674 100%);
+    color: white;
+}
+
+.btn-obs:hover:not(:disabled) {
+    background: linear-gradient(135deg, #00b385 0%, #009563 100%);
+}
+
 /* Scrollbar Styles */
 .tab-content::-webkit-scrollbar,
 .items-container::-webkit-scrollbar {

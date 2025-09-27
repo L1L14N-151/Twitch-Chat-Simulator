@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitch Chat Simulator - Embed Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #9147ff 0%, #772ce8 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .settings-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+        }
+
+        .preview-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+        }
+
+        h2 {
+            color: #9147ff;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #9147ff;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .size-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .preview-container {
+            background: #18181b;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 5px;
+            background: white;
+        }
+
+        .code-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #9147ff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.3s;
+        }
+
+        .copy-button:hover {
+            background: #772ce8;
+        }
+
+        .copy-button.copied {
+            background: #4caf50;
+        }
+
+        .generate-button {
+            background: linear-gradient(135deg, #9147ff 0%, #772ce8 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .generate-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .control-button {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #9147ff;
+            background: white;
+            color: #9147ff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .control-button:hover {
+            background: #9147ff;
+            color: white;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #9147ff;
+            border-bottom-color: #9147ff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .api-example {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .feature-badge {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Twitch Chat Simulator - Embed Generator</h1>
+            <p>Create customizable chat widgets for your website</p>
+        </div>
+
+        <div class="content">
+            <div class="settings-panel">
+                <h2>⚙️ Embed Settings</h2>
+
+                <div class="form-group">
+                    <label>Preset Scenario</label>
+                    <select id="scenario">
+                        <option value="">Default</option>
+                        <option value="gaming">🎮 Gaming Stream</option>
+                        <option value="just-chatting">💬 Just Chatting</option>
+                        <option value="esports">🏆 Esports Tournament</option>
+                        <option value="raid">⚔️ Raid Incoming</option>
+                        <option value="sub-train">🚂 Sub Train</option>
+                        <option value="drama">🔥 Drama/Controversy</option>
+                        <option value="chill">😌 Chill Vibes</option>
+                        <option value="hype">🚀 Hype Release</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Theme</label>
+                    <select id="theme">
+                        <option value="dark">Dark Mode</option>
+                        <option value="light">Light Mode</option>
+                    </select>
+                </div>
+
+                <div class="form-group size-inputs">
+                    <div>
+                        <label>Width</label>
+                        <input type="text" id="width" value="400" placeholder="400px or 100%">
+                    </div>
+                    <div>
+                        <label>Height</label>
+                        <input type="text" id="height" value="600" placeholder="600px or 100%">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Message Speed (ms)</label>
+                    <input type="number" id="speed" min="100" max="5000" value="1000">
+                </div>
+
+                <div class="form-group">
+                    <label>Initial Viewer Count</label>
+                    <input type="number" id="viewers" min="1" max="1000000" value="1000">
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="autostart" checked>
+                    <label for="autostart">Auto-start chat</label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="transparent">
+                    <label for="transparent">Transparent background</label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="overlay">
+                    <label for="overlay">Overlay mode <span class="feature-badge">For Streamers</span></label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="hideHeader">
+                    <label for="hideHeader">Hide chat header</label>
+                </div>
+
+                <div class="form-group">
+                    <label>Custom Messages (comma-separated, optional)</label>
+                    <textarea id="messages" rows="3" placeholder="LETS GOOO, PogChamp, GG EZ"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Custom Usernames (comma-separated, optional)</label>
+                    <textarea id="usernames" rows="2" placeholder="xQc_Fan, PogChampion, TwitchUser123"></textarea>
+                </div>
+
+                <button class="generate-button" onclick="generateEmbed()">Generate Embed Code</button>
+            </div>
+
+            <div class="preview-panel">
+                <h2>👁️ Preview & Code</h2>
+
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('preview')">Preview</button>
+                    <button class="tab" onclick="switchTab('html')">HTML Code</button>
+                    <button class="tab" onclick="switchTab('api')">JavaScript API</button>
+                </div>
+
+                <div class="tab-content active" id="preview-tab">
+                    <div class="preview-container">
+                        <iframe id="preview-iframe" class="preview-iframe"></iframe>
+                    </div>
+
+                    <div class="control-buttons">
+                        <button class="control-button" onclick="sendCommand('START_CHAT')">▶️ Start</button>
+                        <button class="control-button" onclick="sendCommand('STOP_CHAT')">⏸️ Stop</button>
+                        <button class="control-button" onclick="sendCommand('CLEAR_CHAT')">🗑️ Clear</button>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="html-tab">
+                    <div class="code-output" id="embed-code">
+                        <button class="copy-button" onclick="copyCode()">📋 Copy Code</button>
+                        <pre id="code-content">// Configure settings and click "Generate Embed Code"</pre>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="api-tab">
+                    <h3>JavaScript API Reference</h3>
+                    <p>Control the embedded chat using postMessage API:</p>
+
+                    <div class="api-example">
+<pre>// Get iframe reference
+const iframe = document.getElementById('twitch-chat');
+
+// Start chat
+iframe.contentWindow.postMessage({
+    type: 'START_CHAT'
+}, '*');
+
+// Stop chat
+iframe.contentWindow.postMessage({
+    type: 'STOP_CHAT'
+}, '*');
+
+// Clear messages
+iframe.contentWindow.postMessage({
+    type: 'CLEAR_CHAT'
+}, '*');
+
+// Change speed
+iframe.contentWindow.postMessage({
+    type: 'SET_SPEED',
+    speed: 500
+}, '*');
+
+// Switch theme
+iframe.contentWindow.postMessage({
+    type: 'SET_THEME',
+    theme: 'light'
+}, '*');
+
+// Add custom message
+iframe.contentWindow.postMessage({
+    type: 'ADD_MESSAGE',
+    username: 'CustomUser',
+    message: 'Hello World!',
+    badges: ['moderator', 'subscriber']
+}, '*');
+
+// Update viewer count
+iframe.contentWindow.postMessage({
+    type: 'SET_VIEWER_COUNT',
+    count: 5000
+}, '*');
+
+// Load scenario
+iframe.contentWindow.postMessage({
+    type: 'LOAD_SCENARIO',
+    scenario: 'gaming'
+}, '*');
+
+// Listen for responses
+window.addEventListener('message', (event) => {
+    if (event.data.type === 'EMBED_READY') {
+        console.log('Chat embed is ready!');
+    }
+    if (event.data.type === 'EMBED_RESPONSE') {
+        console.log('Command executed:', event.data);
+    }
+});</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'preview';
+        let embedFrame = null;
+
+        function switchTab(tab) {
+            currentTab = tab;
+
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`${tab}-tab`).classList.add('active');
+        }
+
+        function generateEmbed() {
+            // Get all settings
+            const scenario = document.getElementById('scenario').value;
+            const theme = document.getElementById('theme').value;
+            const width = document.getElementById('width').value;
+            const height = document.getElementById('height').value;
+            const speed = document.getElementById('speed').value;
+            const viewers = document.getElementById('viewers').value;
+            const autostart = document.getElementById('autostart').checked;
+            const transparent = document.getElementById('transparent').checked;
+            const overlay = document.getElementById('overlay').checked;
+            const hideHeader = document.getElementById('hideHeader').checked;
+            const messages = document.getElementById('messages').value;
+            const usernames = document.getElementById('usernames').value;
+
+            // Build URL parameters
+            const params = new URLSearchParams();
+            if (scenario) params.set('scenario', scenario);
+            params.set('theme', theme);
+            params.set('speed', speed);
+            params.set('viewers', viewers);
+            params.set('autostart', autostart);
+            if (transparent) params.set('transparent', 'true');
+            if (overlay) params.set('overlay', 'true');
+            if (hideHeader) params.set('hideHeader', 'true');
+            if (messages) params.set('messages', encodeURIComponent(messages));
+            if (usernames) params.set('usernames', encodeURIComponent(usernames));
+
+            const embedUrl = `embed.html?${params.toString()}`;
+
+            // Generate embed code
+            const widthAttr = isNaN(width) ? width : `${width}px`;
+            const heightAttr = isNaN(height) ? height : `${height}px`;
+
+            const embedCode = `<!-- Twitch Chat Simulator Embed -->
+<iframe
+    id="twitch-chat"
+    src="${window.location.origin}/${embedUrl}"
+    width="${widthAttr}"
+    height="${heightAttr}"
+    frameborder="0"
+    style="border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
+    allow="autoplay">
+</iframe>
+
+<!-- Optional: Control the chat with JavaScript -->
+<script>
+// Wait for embed to be ready
+window.addEventListener('message', function(e) {
+    if (e.data.type === 'EMBED_READY') {
+        console.log('Twitch Chat Simulator is ready!');
+
+        // Example: Add a custom message after 3 seconds
+        setTimeout(() => {
+            document.getElementById('twitch-chat').contentWindow.postMessage({
+                type: 'ADD_MESSAGE',
+                username: 'Welcome_Bot',
+                message: 'Welcome to the stream!',
+                badges: ['moderator']
+            }, '*');
+        }, 3000);
+    }
+});
+</script>`;
+
+            // Update code display
+            document.getElementById('code-content').textContent = embedCode;
+
+            // Update preview
+            const iframe = document.getElementById('preview-iframe');
+            iframe.src = embedUrl;
+            iframe.style.width = widthAttr;
+            iframe.style.height = heightAttr;
+            embedFrame = iframe;
+
+            // Switch to preview tab
+            document.querySelector('.tab').click();
+        }
+
+        function copyCode() {
+            const codeContent = document.getElementById('code-content').textContent;
+            navigator.clipboard.writeText(codeContent).then(() => {
+                const button = document.querySelector('.copy-button');
+                button.textContent = '✅ Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = '📋 Copy Code';
+                    button.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function sendCommand(type) {
+            if (!embedFrame || !embedFrame.contentWindow) {
+                alert('Please generate the embed first!');
+                return;
+            }
+
+            embedFrame.contentWindow.postMessage({ type }, '*');
+        }
+
+        // Listen for embed ready message
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'EMBED_READY') {
+                console.log('Embed is ready!', event.data);
+            }
+            if (event.data.type === 'EMBED_RESPONSE') {
+                console.log('Command response:', event.data);
+            }
+        });
+
+        // Generate initial embed on load
+        window.addEventListener('load', () => {
+            setTimeout(generateEmbed, 100);
+        });
+    </script>
+</body>
+</html>

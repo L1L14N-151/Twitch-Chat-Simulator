@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBS Chat</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Reset everything for OBS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            overflow: hidden !important;
+            background: #0e0e10 !important;
+        }
+
+        /* Hide all controls */
+        .app-header,
+        .controls-section,
+        .control-tabs,
+        #browser-banner,
+        .control-panel {
+            display: none !important;
+        }
+
+        /* Full screen container */
+        .main-container {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            max-width: none !important;
+            max-height: none !important;
+        }
+
+        .content-wrapper {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: none !important;
+        }
+
+        .chat-section {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
+            margin: 0 !important;
+        }
+
+        /* Chat container fills everything */
+        .chat-container {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        /* Chat header - reduce height */
+        .chat-header {
+            flex-shrink: 0 !important;
+            height: 45px !important;
+            min-height: 45px !important;
+            padding: 10px 15px !important;
+        }
+
+        /* Messages take all remaining space */
+        .chat-messages {
+            flex: 1 !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow-y: auto !important;
+            padding: 10px !important;
+        }
+
+        /* Remove any padding from message items */
+        .chat-message {
+            padding: 4px 10px !important;
+            margin: 0 !important;
+        }
+
+        /* Make text slightly smaller to fit more */
+        .chat-username,
+        .chat-text {
+            font-size: 1.2rem !important;
+        }
+
+        /* Responsive mode override */
+        body.responsive .chat-container {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main chat structure -->
+    <div class="main-container">
+        <div class="content-wrapper">
+            <div class="chat-section">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <span class="stream-title">LIVE CHAT</span>
+                        <div class="viewer-count">👥 <span id="viewer-count">0</span> viewers</div>
+                    </div>
+                    <div id="chat-messages" class="chat-messages"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Load OBS-specific script instead of main script -->
+    <script src="obs-script.js"></script>
+</body>
+</html>

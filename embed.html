@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitch Chat Simulator - Embed Version</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Embed-specific styles */
+        body.embed-mode {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        body.embed-mode .main-container {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body.embed-mode .app-header,
+        body.embed-mode .control-panel,
+        body.embed-mode .browser-warning-banner {
+            display: none !important;
+        }
+
+        body.embed-mode .content-wrapper {
+            flex: 1;
+            padding: 0;
+            margin: 0;
+        }
+
+        body.embed-mode .chat-section {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        body.embed-mode .chat-container {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 0;
+            border: none;
+        }
+
+        body.embed-mode.transparent-bg .chat-container {
+            background: rgba(24, 24, 27, 0.85);
+            backdrop-filter: blur(10px);
+        }
+
+        body.embed-mode.transparent-bg.light .chat-container {
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        /* Overlay mode for streamers */
+        body.overlay-mode .chat-container {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+
+        body.overlay-mode .chat-header {
+            background: rgba(145, 71, 255, 0.9) !important;
+        }
+
+        body.overlay-mode .chat-message {
+            background: rgba(0, 0, 0, 0.7) !important;
+            backdrop-filter: blur(5px);
+        }
+
+        body.overlay-mode.light .chat-message {
+            background: rgba(255, 255, 255, 0.8) !important;
+        }
+    </style>
+</head>
+<body class="embed-mode">
+    <div class="main-container">
+        <div class="content-wrapper">
+            <div class="chat-section">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <span class="stream-title">LIVE CHAT</span>
+                        <div class="viewer-count">👥 <span id="viewer-count">0</span> viewers</div>
+                    </div>
+                    <div id="chat-messages" class="chat-messages">
+                        <!-- Messages will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Embed-specific initialization
+        (function() {
+            // Parse URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+
+            // Apply embed settings
+            const theme = urlParams.get('theme') || 'dark';
+            const scenario = urlParams.get('scenario') || 'gaming';
+            const speed = parseInt(urlParams.get('speed')) || 1000;
+            const autostart = urlParams.get('autostart') === 'true';
+            const transparent = urlParams.get('transparent') === 'true';
+            const overlay = urlParams.get('overlay') === 'true';
+            const hideHeader = urlParams.get('hideHeader') === 'true';
+            const customMessages = urlParams.get('messages');
+            const customUsernames = urlParams.get('usernames');
+            const viewerCount = parseInt(urlParams.get('viewers')) || 1000;
+
+            // Apply theme
+            if (theme === 'light') {
+                document.body.classList.add('light');
+            }
+
+            // Apply transparent background
+            if (transparent) {
+                document.body.classList.add('transparent-bg');
+            }
+
+            // Apply overlay mode
+            if (overlay) {
+                document.body.classList.add('overlay-mode');
+            }
+
+            // Hide header if requested
+            if (hideHeader) {
+                const header = document.querySelector('.chat-header');
+                if (header) header.style.display = 'none';
+            }
+
+            // Override settings from URL
+            if (customMessages) {
+                try {
+                    const messages = decodeURIComponent(customMessages).split(',');
+                    localStorage.setItem('twitchSimMessages', JSON.stringify(messages));
+                } catch (e) {
+                    console.error('Invalid messages parameter');
+                }
+            }
+
+            if (customUsernames) {
+                try {
+                    const usernames = decodeURIComponent(customUsernames).split(',');
+                    localStorage.setItem('twitchSimUsernames', JSON.stringify(usernames));
+                } catch (e) {
+                    console.error('Invalid usernames parameter');
+                }
+            }
+
+            // Set initial settings
+            localStorage.setItem('twitchSimMessageSpeed', speed);
+            localStorage.setItem('twitchSimViewerCount', viewerCount);
+
+            // Load scenario if specified
+            if (scenario && window.loadScenario) {
+                window.loadScenario(scenario);
+            }
+
+            // Auto-start if requested
+            if (autostart) {
+                setTimeout(() => {
+                    if (window.startSimulation) {
+                        window.startSimulation();
+                    }
+                }, 500);
+            }
+
+            // Setup PostMessage API for parent window communication
+            window.addEventListener('message', function(event) {
+                // Security: Check origin if needed
+                // if (event.origin !== 'https://trusted-domain.com') return;
+
+                const data = event.data;
+                if (!data.type) return;
+
+                switch(data.type) {
+                    case 'START_CHAT':
+                        if (window.startSimulation) window.startSimulation();
+                        break;
+
+                    case 'STOP_CHAT':
+                        if (window.stopSimulation) window.stopSimulation();
+                        break;
+
+                    case 'CLEAR_CHAT':
+                        if (window.clearChat) window.clearChat();
+                        break;
+
+                    case 'SET_SPEED':
+                        if (data.speed) {
+                            localStorage.setItem('twitchSimMessageSpeed', data.speed);
+                            if (window.messageInterval) {
+                                clearInterval(window.messageInterval);
+                                if (window.isRunning) {
+                                    window.startSimulation();
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'SET_THEME':
+                        if (data.theme === 'light') {
+                            document.body.classList.add('light');
+                        } else {
+                            document.body.classList.remove('light');
+                        }
+                        break;
+
+                    case 'ADD_MESSAGE':
+                        if (data.username && data.message && window.addMessage) {
+                            window.addMessage(data.username, data.message, data.badges || []);
+                        }
+                        break;
+
+                    case 'SET_VIEWER_COUNT':
+                        if (data.count) {
+                            const viewerElement = document.getElementById('viewer-count');
+                            if (viewerElement) {
+                                viewerElement.textContent = data.count.toLocaleString();
+                            }
+                            localStorage.setItem('twitchSimViewerCount', data.count);
+                        }
+                        break;
+
+                    case 'LOAD_SCENARIO':
+                        if (data.scenario && window.loadScenario) {
+                            window.loadScenario(data.scenario);
+                        }
+                        break;
+                }
+
+                // Send confirmation back
+                event.source.postMessage({
+                    type: 'EMBED_RESPONSE',
+                    originalType: data.type,
+                    success: true
+                }, event.origin);
+            });
+
+            // Notify parent window that embed is ready
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'EMBED_READY',
+                    version: '1.0.0'
+                }, '*');
+            }
+        })();
+    </script>
+</body>
+</html>

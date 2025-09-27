@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitch Chat Embed - Live Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0e0e10;
+            color: #efeff1;
+            min-height: 100vh;
+        }
+
+        .demo-header {
+            background: linear-gradient(90deg, #9147ff 0%, #5c16c5 100%);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .demo-header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .demo-header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .demo-container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 968px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .main-content {
+            background: #18181b;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .fake-video {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fake-video::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                rgba(255,255,255,0.1),
+                transparent
+            );
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .video-placeholder {
+            font-size: 3rem;
+            color: white;
+            z-index: 1;
+        }
+
+        .stream-info {
+            margin-bottom: 20px;
+        }
+
+        .stream-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stream-meta {
+            display: flex;
+            gap: 20px;
+            color: #adadb8;
+        }
+
+        .chat-embed-container {
+            background: #0e0e10;
+            border-radius: 15px;
+            padding: 20px;
+            height: fit-content;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .chat-controls {
+            background: #18181b;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .control-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #9147ff;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: #464649;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #5c5c5f;
+            transform: translateY(-2px);
+        }
+
+        .control-btn.primary {
+            background: #9147ff;
+        }
+
+        .control-btn.primary:hover {
+            background: #772ce8;
+        }
+
+        .control-btn.danger {
+            background: #eb0400;
+        }
+
+        .control-btn.danger:hover {
+            background: #c90400;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 10px;
+            background: #0e0e10;
+            border: 2px solid #464649;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #9147ff;
+        }
+
+        .scenarios-section {
+            background: #18181b;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+
+        .scenarios-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #9147ff;
+        }
+
+        .scenario-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .scenario-card {
+            background: #0e0e10;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .scenario-card:hover {
+            border-color: #9147ff;
+            transform: translateY(-3px);
+        }
+
+        .scenario-card .emoji {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .scenario-card .name {
+            font-weight: 600;
+            color: #efeff1;
+        }
+
+        .stats-bar {
+            background: #0e0e10;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .stat-item {
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #9147ff;
+        }
+
+        .stat-label {
+            color: #adadb8;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .code-snippet {
+            background: #0e0e10;
+            border: 1px solid #464649;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #adadb8;
+            overflow-x: auto;
+        }
+
+        .features-list {
+            list-style: none;
+            margin-top: 20px;
+        }
+
+        .features-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #2f2f35;
+            display: flex;
+            align-items: center;
+        }
+
+        .features-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-icon {
+            color: #00f593;
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="demo-header">
+        <h1>🎮 Twitch Chat Simulator - Live Demo</h1>
+        <p>See the embedded chat in action with full API control</p>
+    </header>
+
+    <div class="demo-container">
+        <!-- Main Stream + Chat Layout -->
+        <div class="demo-grid">
+            <div class="main-content">
+                <div class="fake-video">
+                    <div class="video-placeholder">🎬 LIVE STREAM</div>
+                </div>
+                <div class="stream-info">
+                    <div class="stream-title">Playing Awesome Game - First Playthrough! !discord !socials</div>
+                    <div class="stream-meta">
+                        <span>🎮 Gaming</span>
+                        <span>👥 <span id="current-viewers">1,234</span> viewers</span>
+                        <span>⏱️ 2:34:56</span>
+                    </div>
+                </div>
+
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <div class="stat-value" id="message-count">0</div>
+                        <div class="stat-label">Messages</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="speed-display">1000ms</div>
+                        <div class="stat-label">Speed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="theme-display">Dark</div>
+                        <div class="stat-label">Theme</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-embed-container">
+                <!-- Embedded Chat -->
+                <iframe
+                    id="twitch-chat"
+                    src="embed.html?scenario=gaming&theme=dark&speed=1000&viewers=1234&autostart=true"
+                    width="100%"
+                    height="500"
+                    frameborder="0"
+                    style="border-radius: 10px;">
+                </iframe>
+
+                <div class="chat-controls">
+                    <div class="control-title">🎛️ Chat Controls</div>
+
+                    <div class="button-group">
+                        <button class="control-btn primary" onclick="startChat()">▶️ Start</button>
+                        <button class="control-btn" onclick="stopChat()">⏸️ Pause</button>
+                        <button class="control-btn danger" onclick="clearChat()">🗑️ Clear</button>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text" id="custom-message" placeholder="Type a message...">
+                        <input type="text" id="custom-username" placeholder="Username">
+                        <button class="control-btn primary" onclick="sendCustomMessage()">Send</button>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="control-btn" onclick="changeSpeed(500)">⚡ Fast</button>
+                        <button class="control-btn" onclick="changeSpeed(1000)">🚶 Normal</button>
+                        <button class="control-btn" onclick="changeSpeed(2000)">🐌 Slow</button>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="control-btn" onclick="toggleTheme()">🌓 Toggle Theme</button>
+                        <button class="control-btn" onclick="addViewers(1000)">👥 +1K Viewers</button>
+                        <button class="control-btn" onclick="triggerRaid()">⚔️ Simulate Raid</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scenarios Section -->
+        <div class="scenarios-section">
+            <h2 class="scenarios-title">🎭 Quick Scenarios</h2>
+            <div class="scenario-cards">
+                <div class="scenario-card" onclick="loadScenario('gaming')">
+                    <div class="emoji">🎮</div>
+                    <div class="name">Gaming</div>
+                </div>
+                <div class="scenario-card" onclick="loadScenario('just-chatting')">
+                    <div class="emoji">💬</div>
+                    <div class="name">Just Chatting</div>
+                </div>
+                <div class="scenario-card" onclick="loadScenario('esports')">
+                    <div class="emoji">🏆</div>
+                    <div class="name">Esports</div>
+                </div>
+                <div class="scenario-card" onclick="loadScenario('raid')">
+                    <div class="emoji">⚔️</div>
+                    <div class="name">Raid</div>
+                </div>
+                <div class="scenario-card" onclick="loadScenario('sub-train')">
+                    <div class="emoji">🚂</div>
+                    <div class="name">Sub Train</div>
+                </div>
+                <div class="scenario-card" onclick="loadScenario('drama')">
+                    <div class="emoji">🔥</div>
+                    <div class="name">Drama</div>
+                </div>
+                <div class="scenario-card" onclick="loadScenario('chill')">
+                    <div class="emoji">😌</div>
+                    <div class="name">Chill</div>
+                </div>
+                <div class="scenario-card" onclick="loadScenario('hype')">
+                    <div class="emoji">🚀</div>
+                    <div class="name">Hype</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="main-content">
+            <h2 style="color: #9147ff; margin-bottom: 20px;">✨ Embed Features</h2>
+            <ul class="features-list">
+                <li><span class="feature-icon">✅</span> Full PostMessage API for external control</li>
+                <li><span class="feature-icon">✅</span> Customizable via URL parameters</li>
+                <li><span class="feature-icon">✅</span> Responsive design that fits any layout</li>
+                <li><span class="feature-icon">✅</span> Real-time theme switching</li>
+                <li><span class="feature-icon">✅</span> Custom message injection</li>
+                <li><span class="feature-icon">✅</span> Overlay mode for streamers</li>
+                <li><span class="feature-icon">✅</span> No external dependencies</li>
+                <li><span class="feature-icon">✅</span> Cross-origin communication support</li>
+            </ul>
+
+            <div class="code-snippet">
+// Example: Embedding the chat on your website
+&lt;iframe src="embed.html?scenario=gaming&autostart=true" width="400" height="600"&gt;&lt;/iframe&gt;
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get chat iframe
+        const chatFrame = document.getElementById('twitch-chat');
+        let messageCount = 0;
+        let currentTheme = 'dark';
+        let currentSpeed = 1000;
+        let viewerCount = 1234;
+
+        // Control functions
+        function startChat() {
+            chatFrame.contentWindow.postMessage({ type: 'START_CHAT' }, '*');
+        }
+
+        function stopChat() {
+            chatFrame.contentWindow.postMessage({ type: 'STOP_CHAT' }, '*');
+        }
+
+        function clearChat() {
+            chatFrame.contentWindow.postMessage({ type: 'CLEAR_CHAT' }, '*');
+            messageCount = 0;
+            document.getElementById('message-count').textContent = messageCount;
+        }
+
+        function sendCustomMessage() {
+            const message = document.getElementById('custom-message').value;
+            const username = document.getElementById('custom-username').value || 'DemoUser';
+
+            if (message) {
+                chatFrame.contentWindow.postMessage({
+                    type: 'ADD_MESSAGE',
+                    username: username,
+                    message: message,
+                    badges: Math.random() > 0.5 ? ['subscriber'] : []
+                }, '*');
+
+                // Clear inputs
+                document.getElementById('custom-message').value = '';
+                messageCount++;
+                document.getElementById('message-count').textContent = messageCount;
+            }
+        }
+
+        function changeSpeed(speed) {
+            currentSpeed = speed;
+            chatFrame.contentWindow.postMessage({
+                type: 'SET_SPEED',
+                speed: speed
+            }, '*');
+            document.getElementById('speed-display').textContent = `${speed}ms`;
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            chatFrame.contentWindow.postMessage({
+                type: 'SET_THEME',
+                theme: currentTheme
+            }, '*');
+            document.getElementById('theme-display').textContent = currentTheme === 'dark' ? 'Dark' : 'Light';
+        }
+
+        function addViewers(count) {
+            viewerCount += count;
+            chatFrame.contentWindow.postMessage({
+                type: 'SET_VIEWER_COUNT',
+                count: viewerCount
+            }, '*');
+            document.getElementById('current-viewers').textContent = viewerCount.toLocaleString();
+        }
+
+        function loadScenario(scenario) {
+            chatFrame.contentWindow.postMessage({
+                type: 'LOAD_SCENARIO',
+                scenario: scenario
+            }, '*');
+
+            // Flash the card
+            event.target.closest('.scenario-card').style.borderColor = '#9147ff';
+            setTimeout(() => {
+                event.target.closest('.scenario-card').style.borderColor = 'transparent';
+            }, 500);
+        }
+
+        function triggerRaid() {
+            // Simulate a raid with multiple messages
+            const raiders = ['RaidLeader', 'Raider1', 'Raider2', 'Raider3', 'Raider4'];
+            const raidMessages = ['RAID!', 'LETS GOOO', 'RAID INCOMING', 'Hello from the raid!', 'PogChamp RAID'];
+
+            raiders.forEach((raider, index) => {
+                setTimeout(() => {
+                    chatFrame.contentWindow.postMessage({
+                        type: 'ADD_MESSAGE',
+                        username: raider,
+                        message: raidMessages[index],
+                        badges: ['subscriber']
+                    }, '*');
+                    messageCount++;
+                    document.getElementById('message-count').textContent = messageCount;
+                }, index * 200);
+            });
+
+            // Add viewers
+            addViewers(500);
+        }
+
+        // Listen for messages from embed
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'EMBED_READY') {
+                console.log('Chat embed is ready!');
+            }
+
+            // Track messages (approximate)
+            if (event.data.type === 'EMBED_RESPONSE' && event.data.originalType === 'START_CHAT') {
+                setInterval(() => {
+                    messageCount++;
+                    document.getElementById('message-count').textContent = messageCount;
+                }, currentSpeed);
+            }
+        });
+
+        // Allow Enter key to send message
+        document.getElementById('custom-message').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendCustomMessage();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -571,21 +571,35 @@ function createBotMessage() {
     return messageDiv;
 }
 
+// Create broadcast channel for perfect mirror
+const mirrorChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('twitch-mirror') : null;
+
 function addMessage() {
     // Vérifier si on doit ajouter un message de bot
     const currentTime = Date.now();
     const timeSinceLastBot = currentTime - lastBotMessageTime;
     const botDelay = botDelaySlider ? parseInt(botDelaySlider.value) * 1000 : 30000;
 
+    let messageElement;
+
     // Message de bot selon le délai configuré
     if (botMessagesCheckbox && botMessagesCheckbox.checked && timeSinceLastBot > botDelay) {
-        const botMessage = createBotMessage();
-        chatMessages.appendChild(botMessage);
+        messageElement = createBotMessage();
+        chatMessages.appendChild(messageElement);
         lastBotMessageTime = currentTime;
     } else {
         // Message normal
-        const message = createMessage();
-        chatMessages.appendChild(message);
+        messageElement = createMessage();
+        chatMessages.appendChild(messageElement);
+    }
+
+    // BROADCAST TO MIRROR WINDOW
+    if (mirrorChannel && !window.location.hash.includes('obs-mode')) {
+        // Only broadcast from main window
+        mirrorChannel.postMessage({
+            type: 'new-message',
+            html: messageElement.outerHTML
+        });
     }
 
     const shouldScroll = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 150;
@@ -600,30 +614,57 @@ function addMessage() {
     }
 }
 
+// LISTEN FOR MIRROR MESSAGES (only in OBS mode)
+if (mirrorChannel && window.location.hash.includes('obs-mode')) {
+    mirrorChannel.addEventListener('message', function(e) {
+        if (e.data.type === 'new-message') {
+            // Add the exact same message
+            const temp = document.createElement('div');
+            temp.innerHTML = e.data.html;
+            chatMessages.appendChild(temp.firstChild);
+
+            // Scroll and cleanup
+            const shouldScroll = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 150;
+            if (shouldScroll) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            if (chatMessages.children.length > 150) {
+                while (chatMessages.children.length > 100) {
+                    chatMessages.removeChild(chatMessages.children[0]);
+                }
+            }
+        }
+    });
+}
+
 function startSimulation() {
     if (isRunning) return;
 
     isRunning = true;
 
-    addMessage();
+    // Only generate messages in main window, not in OBS mirror
+    if (!window.location.hash.includes('obs-mode')) {
+        addMessage();
 
-    function scheduleNextMessage() {
-        if (!isRunning) return;
+        function scheduleNextMessage() {
+            if (!isRunning) return;
 
-        // Get current speed value (allows real-time updates)
-        const baseSpeed = parseInt(speedSlider.value);
+            // Get current speed value (allows real-time updates)
+            const baseSpeed = parseInt(speedSlider.value);
 
-        // Variation subtile : ±20% de la vitesse de base
-        const variation = (Math.random() - 0.5) * 0.4;
-        const nextDelay = baseSpeed * (1 + variation);
+            // Variation subtile : ±20% de la vitesse de base
+            const variation = (Math.random() - 0.5) * 0.4;
+            const nextDelay = baseSpeed * (1 + variation);
 
-        intervalId = setTimeout(() => {
-            addMessage();
-            scheduleNextMessage();
-        }, nextDelay);
+            intervalId = setTimeout(() => {
+                addMessage();
+                scheduleNextMessage();
+            }, nextDelay);
+        }
+
+        scheduleNextMessage();
     }
-
-    scheduleNextMessage();
 
     startBtn.disabled = true;
     stopBtn.disabled = false;
